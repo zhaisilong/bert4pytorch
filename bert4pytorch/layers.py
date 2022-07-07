@@ -120,7 +120,7 @@ class MultiHeadAttentionLayer(nn.Module):
             attention_mask = (1.0 - attention_mask) * -10000.0
             attention_scores = attention_scores + attention_mask
 
-        # 将attention score 归一化到0-1
+        # 将 attention score 归一化到 0-1
         attention_probs = nn.Softmax(dim=-1)(attention_scores)
 
         attention_probs = self.dropout(attention_probs)

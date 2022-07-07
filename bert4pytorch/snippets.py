@@ -4,7 +4,7 @@
 import numpy as np
 
 def truncate_sequences(maxlen, indices, *sequences):
-    """截断总长度至不超过maxlen
+    """截断总长度至不超过 maxlen
     """
     sequences = [s for s in sequences if s]
     if not isinstance(indices, (list, tuple)):
@@ -20,7 +20,7 @@ def truncate_sequences(maxlen, indices, *sequences):
 
 
 def sequence_padding(inputs, length=None, value=0, seq_dims=1, mode='post'):
-    """Numpy函数，将序列padding到同一长度
+    """Numpy 函数，将序列 padding 到同一长度
     """
     if length is None:
         length = np.max([np.shape(x)[:seq_dims] for x in inputs], axis=0)
@@ -66,7 +66,7 @@ def insert_arguments(**arguments):
 
 def load_tf_weights_in_bert(model, config, tf_checkpoint_path):
     """加载 tf checkpoints 到 pytorch model."""
-    # 需要安装tensorflow，请自行安装
+    # 需要安装 tensorflow，请自行安装
     try:
         import re
 
@@ -139,7 +139,7 @@ def load_tf_weights_in_bert(model, config, tf_checkpoint_path):
     return model
 
 def convert_tf_checkpoint_to_pytorch(tf_checkpoint_path, bert_config_file, pytorch_dump_path):
-    """tf模型转pytorch"""
+    """tf 模型转 pytorch"""
     # 初始化 PyTorch model
     config = BertConfig.from_json_file(bert_config_file)
     print("Building PyTorch model from configuration: {}".format(str(config)))

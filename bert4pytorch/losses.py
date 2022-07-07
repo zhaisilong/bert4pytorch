@@ -8,11 +8,12 @@ class FocalLoss(nn.Module):
         super(FocalLoss, self).__init__()
         self.gamma = gamma
         self.weight = weight
+        self.reduction = reduction
 
     def forward(self, inputs: torch.Tensor, targets: torch.Tensor):
         ce_loss = F.cross_entropy(inputs, targets, weight=self.weight, reduction="none")
         p_t = torch.exp(-ce_loss)
-        loss = (1 - p_t)**self.gamma * ce_loss
+        loss = (1 - p_t) ** self.gamma * ce_loss
         if self.reduction == "mean":
             loss = loss.mean()
         elif self.reduction == "sum":
@@ -21,7 +22,7 @@ class FocalLoss(nn.Module):
 
 
 class LabelSmoothingCrossEntropy(nn.Module):
-    def __init__(self, eps=0.1, reduction='mean',ignore_index=-100):
+    def __init__(self, eps=0.1, reduction='mean', ignore_index=-100):
         super(LabelSmoothingCrossEntropy, self).__init__()
         self.eps = eps
         self.reduction = reduction
@@ -30,11 +31,11 @@ class LabelSmoothingCrossEntropy(nn.Module):
     def forward(self, output, target):
         c = output.size()[-1]
         log_preds = F.log_softmax(output, dim=-1)
-        if self.reduction=='sum':
+        if self.reduction == 'sum':
             loss = -log_preds.sum()
         else:
             loss = -log_preds.sum(dim=-1)
-            if self.reduction=='mean':
+            if self.reduction == 'mean':
                 loss = loss.mean()
-        return loss*self.eps/c + (1-self.eps) * F.nll_loss(log_preds, target, reduction=self.reduction,
-                                                           ignore_index=self.ignore_index)
+        return loss * self.eps / c + (1 - self.eps) * F.nll_loss(log_preds, target, reduction=self.reduction,
+                                                                 ignore_index=self.ignore_index)

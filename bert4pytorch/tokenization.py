@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def load_vocab(vocab_file):
-    """加载词典文件到dict"""
+    """加载词典文件到 dict"""
     vocab = collections.OrderedDict()
     index = 0
     with open(vocab_file, "r", encoding="utf-8") as reader:
@@ -41,35 +41,25 @@ def whitespace_tokenize(text):
 class Tokenizer(object):
 
     def __init__(
-        self, 
-        vocab_file, 
-        do_lower_case=True, 
-        do_basic_tokenize=True,
-        unk_token="[UNK]",
-        sep_token="[SEP]",
-        pad_token="[PAD]",
-        cls_token="[CLS]",
-        mask_token="[MASK]"):
+            self,
+            vocab_file,
+            do_lower_case=True,
+            do_basic_tokenize=True,
+            unk_token="[UNK]",
+            sep_token="[SEP]",
+            pad_token="[PAD]",
+            cls_token="[CLS]",
+            mask_token="[MASK]"):
         """
-
         参数:
-            vocab_file:
-                词典文件
-            do_lower_case:
-                是否转换成小写
-            do_basic_tokenize:
-                分词前，是否进行基础的分词
-            unk_token:
-                未知词标记
-            sep_token:
-                句子切分标记，当只有一句话作为输入时，此标记知识作为结束符；当有两句话作为输入时，此标记作为分隔符、最后一句话的结束符
-            pad_token:
-                padding填充标记
-            cls_token:
-                分类标记，位于整个序列的第一个
-            mask_token:
-                mask标记
-          
+            vocab_file: 词典文件
+            do_lower_case: 是否转换成小写
+            do_basic_tokenize: 分词前，是否进行基础的分词
+            unk_token: 未知词标记
+            sep_token: 句子切分标记，当只有一句话作为输入时，此标记知识作为结束符；当有两句话作为输入时，此标记作为分隔符、最后一句话的结束符
+            pad_token: padding填充标记
+            cls_token: 分类标记，位于整个序列的第一个
+            mask_token:mask标记
         """
         if not os.path.isfile(vocab_file):
             raise ValueError(
@@ -79,8 +69,8 @@ class Tokenizer(object):
             [(ids, tok) for tok, ids in self.vocab.items()])
         self.do_basic_tokenize = do_basic_tokenize
         if do_basic_tokenize:
-          self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case,
-                                                never_split=(unk_token, sep_token, pad_token, cls_token, mask_token))
+            self.basic_tokenizer = BasicTokenizer(do_lower_case=do_lower_case,
+                                                  never_split=(unk_token, sep_token, pad_token, cls_token, mask_token))
         self.wordpiece_tokenizer = WordpieceTokenizer(vocab=self.vocab)
         self.unk_token = unk_token
         self.sep_token = sep_token
@@ -103,27 +93,27 @@ class Tokenizer(object):
         return split_tokens
 
     def convert_tokens_to_ids(self, tokens):
-        """tokens转为vocab中的id"""
+        """tokens 转为 vocab 中的 id"""
         ids = []
         for token in tokens:
             ids.append(self.vocab[token])
         return ids
 
     def convert_ids_to_tokens(self, ids):
-        """ids转为词表中的token"""
+        """ids 转为词表中的 token"""
         tokens = []
         for i in ids:
             tokens.append(self.ids_to_tokens[i])
         return tokens
-    
+
     def encode(
-        self,
-        first_text,
-        second_text=None,
-        max_len=None,
-        truncate_from='right'
+            self,
+            first_text,
+            second_text=None,
+            max_len=None,
+            truncate_from='right'
     ):
-        """输出文本对应token id和segment id
+        """输出文本对应 token id 和 segment id
         """
         if isinstance(first_text, str):
             first_tokens = self.tokenize(first_text)
@@ -160,7 +150,6 @@ class Tokenizer(object):
             first_segment_ids.extend(second_segment_ids)
 
         return first_token_ids, first_segment_ids
-
 
 
 class BasicTokenizer(object):
@@ -372,6 +361,7 @@ def _is_punctuation(char):
     if cat.startswith("P"):
         return True
     return False
+
 
 def convert_to_unicode(text):
     """Converts `text` to Unicode (if it's not already), assuming utf-8 input."""

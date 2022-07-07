@@ -13,18 +13,18 @@ class Transformer(nn.Module):
             self,
             vocab_size,  # 词表大小
             hidden_size,  # 编码维度
-            num_hidden_layers,  # Transformer总层数
-            num_attention_heads,  # Attention的头数
-            intermediate_size,  # FeedForward的隐层维度
-            hidden_act,  # FeedForward隐层的激活函数
-            dropout_rate,  # Dropout比例
-            embedding_size=None,  # 指定embedding_size, 不指定则使用config文件的参数
-            attention_head_size=None,  # Attention中V的head_size
-            attention_key_size=None,  # Attention中Q,K的head_size
+            num_hidden_layers,  # Transformer 总层数
+            num_attention_heads,  # Attention 的头数
+            intermediate_size,  # FeedForward 的隐层维度
+            hidden_act,  # FeedForward 隐层的激活函数
+            dropout_rate,  # Dropout 比例
+            embedding_size=None,  # 指定 embedding_size, 不指定则使用 config 文件的参数
+            attention_head_size=None,  # Attention 中 V 的 head_size
+            attention_key_size=None,  # Attention中 Q,K 的 head_size
             sequence_length=None,  # 是否固定序列长度
-            keep_tokens=None,  # 要保留的词ID列表
-            compound_tokens=None,  # 扩展Embedding
-            residual_attention_scores=False,  # Attention矩阵加残差
+            keep_tokens=None,  # 要保留的词 ID 列表
+            compound_tokens=None,  # 扩展 Embedding
+            residual_attention_scores=False,  # Attention 矩阵加残差
             ignore_invalid_weights=False,  # 允许跳过不存在的权重
             **kwargs
     ):
@@ -56,12 +56,12 @@ class Transformer(nn.Module):
         raise NotImplementedError
 
     def variable_mapping(self):
-        """构建pytorch层与checkpoint的变量名之间的映射表
+        """构建 pytorch 层与 checkpoint 的变量名之间的映射表
         """
         return {}
 
     def load_weights_from_pytorch_checkpoint(self, checkpoint, mapping=None):
-        """根据mapping从checkpoint加载权重
+        """根据 mapping 从 checkpoint 加载权重
         """
         # model = self
         state_dict = torch.load(checkpoint, map_location='cpu')
@@ -74,7 +74,7 @@ class Transformer(nn.Module):
 
 
 def lm_mask(segment_ids):
-    """定义下三角Attention Mask（语言模型用）
+    """定义下三角 Attention Mask（语言模型用）
     """
     idxs = torch.arange(0, segment_ids.shape[1])
     mask = (idxs.unsqueeze(0) <= idxs.unsqueeze(1)).unsqueeze(0).unsqueeze(0).to(dtype=torch.float32)
@@ -82,19 +82,18 @@ def lm_mask(segment_ids):
 
 
 def unilm_mask(tokens_ids, segment_ids):
-    """定义UniLM的Attention Mask（Seq2Seq模型用）
-        其中source和target的分区，由segment_ids来表示。
+    """定义 UniLM 的 Attention Mask（Seq2Seq模型用）
+        其中 source 和 target 的分区，由 segment_ids 来表示。
         UniLM: https://arxiv.org/abs/1905.03197
-
-        token_ids: shape为(batch_size, seq_length), type为tensor
-        segment_ids: shape为(batch_size, seq_length)， type为tensor
+        token_ids: shape为(batch_size, seq_length), type 为 tensor
+        segment_ids: shape为(batch_size, seq_length)， type 为 tensor
     """
 
-    # 把segment_ids的padding部分值变成1，思想就是先不考虑padding，最后统一把padding部分的mask值设为0
+    # 把 segment_ids 的 padding 部分值变成 1，思想就是先不考虑 padding，最后统一把 padding 部分的 mask 值设为 0
     ids = segment_ids + (tokens_ids <= 0).long()
     # 在序列维度进行累加求和
     idxs = torch.cumsum(ids, dim=1)
-    # 根据tokens_ids构造mask矩阵：[batch_size, 1, seq_length, 1]
+    # 根据 tokens_ids 构造 mask 矩阵：[batch_size, 1, seq_length, 1]
     extended_mask = tokens_ids.unsqueeze(1).unsqueeze(3)
     # 构造unilm的mask矩阵，并把shape扩充到[batch_size, num_heads, from_seq_length, to_seq_length]
     mask = (idxs.unsqueeze(1) <= idxs.unsqueeze(2)).unsqueeze(1).to(dtype=torch.float32)
@@ -111,8 +110,9 @@ def unilm_mask(tokens_ids, segment_ids):
 class BertEmbeddings(nn.Module):
     """
         embeddings层
-        构造word, position and token_type embeddings.
+        构造 word, position and token_type embeddings.
     """
+
     def __init__(self, vocab_size, hidden_size, max_position, segment_vocab_size, drop_rate):
         super(BertEmbeddings, self).__init__()
         self.word_embeddings = nn.Embedding(vocab_size, hidden_size, padding_idx=0)
@@ -144,10 +144,11 @@ class BertLayer(nn.Module):
         Transformer层:
         顺序为: Attention --> Add --> LayerNorm --> Feed Forward --> Add --> LayerNorm
 
-        注意: 1、以上都不计dropout层，并不代表没有dropout，每一层的dropout使用略有不同，注意区分
-              2、原始的Transformer的encoder中的Feed Forward层一共有两层linear，
-              config.intermediate_size的大小不仅是第一层linear的输出尺寸，也是第二层linear的输入尺寸
+        注意: 1、以上都不计 dropout 层，并不代表没有 dropout，每一层的dropout使用略有不同，注意区分
+              2、原始的 Transformer 的 encoder 中的 Feed Forward 层一共有两层 linear，
+              config.intermediate_size 的大小不仅是第一层 linear 的输出尺寸，也是第二层 linear 的输入尺寸
     """
+
     def __init__(self, hidden_size, num_attention_heads, dropout_rate, intermediate_size, hidden_act, is_dropout=False):
         super(BertLayer, self).__init__()
         self.multiHeadAttention = MultiHeadAttentionLayer(hidden_size, num_attention_heads, dropout_rate)
@@ -168,19 +169,19 @@ class BertLayer(nn.Module):
 
 
 class BERT(Transformer):
-    """构建BERT模型
+    """构建 BERT 模型
     """
 
     def __init__(
             self,
             max_position,  # 序列最大长度
-            segment_vocab_size=2,  # segment总数目
-            initializer_range=0.02, # 权重初始化方差
-            with_pool=False,  # 是否包含Pool部分
-            with_nsp=False,  # 是否包含NSP部分
-            with_mlm=False,  # 是否包含MLM部分
+            segment_vocab_size=2,  # segment 总数目
+            initializer_range=0.02,  # 权重初始化方差
+            with_pool=False,  # 是否包含 Pool 部分
+            with_nsp=False,  # 是否包含 NSP 部分
+            with_mlm=False,  # 是否包含 MLM 部分
             hierarchical_position=None,  # 是否层次分解位置编码
-            custom_position_ids=False,  # 是否自行传入位置id
+            custom_position_ids=False,  # 是否自行传入位置 id
             **kwargs
     ):
         self.max_position = max_position
@@ -196,8 +197,10 @@ class BERT(Transformer):
 
         super(BERT, self).__init__(**kwargs)
 
-        self.embeddings = BertEmbeddings(self.vocab_size, self.hidden_size, self.max_position, self.segment_vocab_size, self.dropout_rate)
-        layer = BertLayer(self.hidden_size, self.num_attention_heads, self.dropout_rate, self.intermediate_size, self.hidden_act, is_dropout=False)
+        self.embeddings = BertEmbeddings(self.vocab_size, self.hidden_size, self.max_position, self.segment_vocab_size,
+                                         self.dropout_rate)
+        layer = BertLayer(self.hidden_size, self.num_attention_heads, self.dropout_rate, self.intermediate_size,
+                          self.hidden_act, is_dropout=False)
         self.encoderLayer = nn.ModuleList([copy.deepcopy(layer) for _ in range(self.num_hidden_layers)])
         if self.with_pool:
             # Pooler部分（提取CLS向量）
@@ -222,11 +225,11 @@ class BERT(Transformer):
         self.apply(self.init_model_weights)
 
     def init_model_weights(self, module):
-        """ 初始化权重
+        """初始化权重
         """
         if isinstance(module, (nn.Linear, nn.Embedding)):
-            # bert参数初始化, tf版本在linear和Embedding层使用的是截断正太分布, pytorch没有实现该函数,
-            # 此种初始化对于加载预训练模型后进行finetune没有任何影响，
+            # bert 参数初始化, tf 版本在 linear 和 Embedding 层使用的是截断正太分布, pytorch 没有实现该函数,
+            # 此种初始化对于加载预训练模型后进行 finetune 没有任何影响，
             # cf https://github.com/pytorch/pytorch/pull/5617
             module.weight.data.normal_(mean=0.0, std=self.initializer_range)
         elif isinstance(module, LayerNorm):
@@ -237,29 +240,29 @@ class BERT(Transformer):
 
     def forward(self, token_ids, segment_ids=None, attention_mask=None, output_all_encoded_layers=False):
         """
-            token_ids： 一连串token在vocab中对应的id
-            segment_ids： 就是token对应的句子id,值为0或1（0表示对应的token属于第一句，1表示属于第二句）,当
-                             任务只有一个句子输入时，segment_ids的每个值都是0，可不用传值
-            attention_mask：各元素的值为0或1,避免在padding的token上计算attention, 1进行attetion, 0不进行attention
+            token_ids： 一连串 token 在 vocab 中对应的id
+            segment_ids： 就是 token 对应的句子 id,值为 0 或 1（0表示对应的token属于第一句，1表示属于第二句）,当
+                             任务只有一个句子输入时，segment_ids 的每个值都是 0，可不用传值
+            attention_mask：各元素的值为 0 或 1,避免在 padding 的 token 上计算 attention, 1 进行 attetion, 0 不进行 attention
 
-            以上三个参数的shape为： (batch_size, sequence_length); type为tensor
+            以上三个参数的 shape 为： (batch_size, sequence_length); type 为 tensor
         """
 
         if attention_mask is None:
-            # 根据token_ids创建一个3D的attention mask矩阵，尺寸为[batch_size, 1, 1, to_seq_length]，
-            # 目的是为了适配多头注意力机制，从而能广播到[batch_size, num_heads, from_seq_length, to_seq_length]尺寸
+            # 根据 token_ids 创建一个 3D 的 attention mask 矩阵，尺寸为 [batch_size, 1, 1, to_seq_length]，
+            # 目的是为了适配多头注意力机制，从而能广播到 [batch_size, num_heads, from_seq_length, to_seq_length] 尺寸
             attention_mask = (token_ids != 0).long().unsqueeze(1).unsqueeze(2)
         if segment_ids is None:
             segment_ids = torch.zeros_like(token_ids)
 
-        # 兼容fp16
+        # 兼容 fp16
         attention_mask = attention_mask.to(dtype=next(self.parameters()).dtype)
-        # 对mask矩阵中，数值为0的转换成很大的负数，使得不需要attention的位置经过softmax后,分数趋近于0
+        # 对 mask 矩阵中，数值为 0 的转换成很大的负数，使得不需要 attention 的位置经过 softmax 后,分数趋近于0
         # attention_mask = (1.0 - attention_mask) * -10000.0
-        # 执行embedding
+        # 执行 embedding
         hidden_states = self.embeddings(token_ids, segment_ids)
         # 执行encoder
-        encoded_layers = [hidden_states] # 添加embedding的输出
+        encoded_layers = [hidden_states]  # 添加 embedding 的输出
         for layer_module in self.encoderLayer:
             hidden_states = layer_module(hidden_states, attention_mask)
             if output_all_encoded_layers:
@@ -273,17 +276,17 @@ class BERT(Transformer):
         if not output_all_encoded_layers:
             encoded_layers = encoded_layers[-1]
 
-        # 是否添加pool层
+        # 是否添加 pool 层
         if self.with_pool:
             pooled_output = self.pooler_activation(self.pooler(sequence_output[:, 0]))
         else:
             pooled_output = None
-        # 是否添加nsp
+        # 是否添加 nsp
         if self.with_pool and self.with_nsp:
             nsp_scores = self.nsp(pooled_output)
         else:
             nsp_scores = None
-        # 是否添加mlm
+        # 是否添加 mlm
         if self.with_mlm:
             mlm_hidden_state = self.mlmDense(sequence_output)
             mlm_hidden_state = self.transform_act_fn(mlm_hidden_state)
@@ -350,7 +353,7 @@ def build_transformer_model(
         application='encoder',
         **kwargs
 ):
-    """根据配置文件构建模型，可选加载checkpoint权重
+    """根据配置文件构建模型，可选加载 checkpoint 权重
     """
     configs = {}
     if config_path is not None:
